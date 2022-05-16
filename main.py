@@ -1,7 +1,10 @@
+from cgi import print_arguments
 from turtle import color
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
+from itertools import combinations, groupby
+from collections import Counter
 ##Merging 12 months of sales data into a single file
 df = pd.read_csv("/Users/kshitijchaubey/Desktop/Pandas-Data-Science-Tasks-master/SalesAnalysis/Sales_Data/Sales_April_2019.csv")
 
@@ -40,8 +43,8 @@ all_data['Price Each'] = pd.to_numeric(all_data['Price Each'])
 all_data['Sales'] = all_data['Quantity Ordered'] * all_data['Price Each']
 
 
-# Best_Month = all_data.groupby('Month').sum()
-# # print(Best_Month)
+Best_Month = all_data.groupby('Month').sum()
+# print(Best_Month)
 # months = range(1,13)
 # plt.bar(months,Best_Month['Sales'], color='Green')
 # plt.xticks(months)
@@ -61,7 +64,7 @@ all_data['City'] = all_data['Purchase Address'].apply(lambda x: f"{get_city(x)}(
 ###What City had the highest no. of sales
 Best_City = [city for city, df in all_data.groupby('City')]
 # print(Best_City)
-# cities = all_data['City'].unique()
+cities = all_data['City'].unique()
 # plt.bar(cities,Best_City['Sales'])
 # plt.xticks(cities, rotation = 'vertical', size = 8)
 # plt.ylabel("Sales in $USD")
@@ -75,5 +78,49 @@ all_data['Minute'] = all_data['Order Date'].dt.minute
 
 hours = [hour for hour, df in all_data.groupby('Hour')]
 
-print(plt.plot(hours, all_data.groupby(['Hour']).count()))
+# plt.plot(hours, all_data.groupby(['Hour']).count())
+# plt.xticks(hours)
+# plt.xlabel("Hour")
+# plt.ylabel("Number of Orders")
+# plt.grid()
+# print(plt.show())
+
+#What 2 products are most often sold together?
+### Step 1: Finding the duplicate Order ID's to figure out which products were sold together
+### Step 2: Creating a new column to have items with same Order IDs in a lie
+### Step 3: Dropping duplicates of Grouped Order IDs
+### Step 4: Counting the grouped column and getting the top 10 two items that are sold together 
+# df = all_data[all_data['Order ID'].duplicated(keep=False)] #to mark all duplicate order ids
+
+# df['Grouped'] = df.groupby('Order ID')['Product'].transform(lambda x: ','.join(x))
+
+# df = df[['Order ID','Grouped']].drop_duplicates()
+
+# count = Counter()
+# for row in df['Grouped']:
+#     row_list = row.split(',')
+#     count.update(Counter(combinations(row_list,2)))
+# for key, value in count.most_common(10):
+    # print(key,value)
+
+#What Product Sold the most? Why do you think it sold the most?
+product_group = all_data.groupby('Product')
+quantity_ordered  = product_group.sum()['Quantity Ordered']
+
+products = [product for product, df in product_group]
+# plt.bar(products, quantity_ordered)
+# plt.ylabel('Quantity ordered')
+# plt.xlabel('Products')
+
+prices = all_data.groupby('Product').mean()['Price Each']
+fig, ax1 = plt.subplots()
+ax2 = ax1.twinx()
+ax1.bar(products, quantity_ordered, color = 'g')
+ax2.plot(products, prices, 'b-')
+
+ax1.set_xlabel('Product name')
+ax1.set_ylabel('Quantity Ordered', color = 'g')
+ax2.set_ylabel('Price($)', color= 'b')
+ax1.set_xticklabels(products, rotation = 'vertical', size = 8)
+print(plt.show())
 
